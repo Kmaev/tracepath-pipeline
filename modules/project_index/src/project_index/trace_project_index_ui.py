@@ -29,7 +29,15 @@ except ImportError as e:
 
 
 class TraceProjectIndex(QtWidgets.QMainWindow):
+    """UI widget for creating a project folder structure"""
+
     def __init__(self, parent=None):
+        """
+        Initialize the main window UI and load required config files.
+
+        Args:
+            parent: Parent widget.
+        """
         super(TraceProjectIndex, self).__init__(parent=parent)
         # Set tool utils attr
         self.resize(900, 700)
@@ -182,15 +190,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         shortcut = QtGui.QShortcut(QtGui.QKeySequence("Esc"), self.tree_widget)
         shortcut.activated.connect(lambda: self.tree_widget.clearSelection())
 
-    def show_usd_missing_warning(self):
-        """
-        Displays a warning if the USD package is not present in the environment.
-
-        If the UI is launched from the Tracepath terminal, it will not include the USD package.
-        The UI is still usable, but when creating Items (shots) it will not generate an initial usd scene template.
-        To have the template generated automatically, the UI must be launched within the specific
-        project_index and USD environment: rez env project_index usd -- trace_project
-        """
+    def show_usd_missing_warning(self) -> None:
+        """Display a warning if the application was launched without OpenUSD package in the environment."""
         if _usd is None:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -202,18 +203,14 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
 
             )
 
-    def on_add_task_checked(self):
-        """
-        Enables or disables the software input field based on the 'Add Tasks Subfolder' checkbox.
-        Disables editing if the checkbox is unchecked.
-        """
+    def on_add_task_checked(self) -> None:
+        """Toggle the software input field based on the checkbox state."""
         self.include_software.setHidden(not self.added_task_subfolders_check.isChecked())
         self.include_software.setEnabled(self.added_task_subfolders_check.isChecked())
 
-    def _tree_item(self, name, parent, removable=False):
-        """
-        Defines a QTreeWidgetItem and adds it to the parent.
-        """
+    def _tree_item(self, name: str, parent: QtWidgets.QTreeWidget | QtWidgets.QTreeWidgetItem,
+                   removable: bool = False) -> QtWidgets.QTreeWidgetItem | None:
+        """Create a tree item and attach it to the parent."""
         _parent = parent
         count = 1
 
@@ -237,10 +234,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
         return item
 
-    def populate_tree(self):
-        """
-        Executed on init. Populates the tree widget with existing projects from the project index JSON file.
-        """
+    def populate_tree(self) -> None:
+        """Populate the tree widget with projects from the index file."""
         if not os.path.isfile(self.project_index_path):
             read = {}
         else:
@@ -260,21 +255,16 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
                     for task, _ in tasks['tasks'].items():
                         self._tree_item(task, item)
 
-    def get_selection(self):
-        """
-        Returns the currently selected item.
-        If nothing is selected, returns the invisible root item.
-        """
+    def get_selection(self) -> QtWidgets.QTreeWidgetItem:
+        """Return the selected item or the root item."""
         selected = self.tree_widget.selectedItems()
         if selected:
             return selected[0]
         else:
             return self.tree_widget.invisibleRootItem()
 
-    def open_menu(self, position):
-        """
-        Opens the right-click context menu for the selected tree item.
-        """
+    def open_menu(self, position: QtCore.QPoint) -> None:
+        """Open the context menu for the selected tree item."""
         item = self.tree_widget.itemAt(position)
         menu = QtWidgets.QMenu(self)
 
@@ -299,10 +289,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             add_action.triggered.connect(self.add_tree_item)
         menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
-    def add_tree_item(self):
-        """
-        Handles the logic for adding a new tree item.
-        """
+    def add_tree_item(self) -> None:
+        """Add a new tree item."""
         parent = self.get_selection()
         item = self._tree_item("Untitled", parent, removable=True)
 
@@ -318,10 +306,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
 
         self.undo_stack.append(('add', item, parent))
 
-    def delete_tree_item(self):
-        """
-        Handles the logic for deleting a tree item.
-        """
+    def delete_tree_item(self) -> None:
+        """Delete the selected tree item."""
         selected = self.tree_widget.selectedItems()
         if selected:
             item = selected[0]
@@ -348,6 +334,12 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
                 self.tree_widget.takeTopLevelItem(index)
 
     def read_local_asset_lib_data(self) -> dict:
+        """
+        Load local asset repository data.
+
+        Returns:
+            dict: Local asset repository data per project.
+        """
         if not os.path.isfile(self.local_asset_lib):
             logging.warning("Local Asset Library definition file not found in config.")
             return {}
@@ -363,10 +355,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             )
             return {}
 
-    def set_local_asset_repo(self):
-        """
-        Sets QListWidgetItem as a local (per project asset repository)
-        """
+    def set_local_asset_repo(self) -> None:
+        """Set the local asset repository for the current project."""
         current_project = self.create_project_line_edit.text()
         repo_path = self.read_local_asset_lib_data().get(current_project, "")
         if not repo_path and current_project:
@@ -377,12 +367,14 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             self.asset_repo_location.setReadOnly(True)
         self.asset_repo_location.setText(repo_path)
 
-    def override_local_asset_repo(self):
+    def override_local_asset_repo(self) -> None:
+        """Override the local asset repository for the current project."""
         self.asset_repository = self.get_selection()
         repo_path = self.create_local_asset_repo_path()
         self.asset_repo_location.setText(repo_path)
 
-    def clear_local_asset_repo_path(self):
+    def clear_local_asset_repo_path(self) -> None:
+        """Toggle clearing of the local asset repository input."""
         if self.edit_asset_repo.isChecked():
             self.asset_repo_location.setHidden(False)
             self.asset_repo_location.setText("")
@@ -394,13 +386,12 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             self.asset_repo_location.setReadOnly(True)
             self.set_local_asset_repo()
 
-    def get_asset_repo_path_parts(self, item, parts=None):
+    def get_asset_repo_path_parts(self, item: QtWidgets.QTreeWidgetItem, parts: list[str] | None = None) -> list[str]:
         """
-        Recursively collect the names of a QTreeWidgetItem and all its parent items.
+        Collect item and parent names to build a repository path.
 
-        This function walks up the tree hierarchy starting from the given item,
-        adding each item's text label (column 0) to a list. It is used to
-        construct an asset-repository path.
+        Walk up the tree hierarchy starting from the given item,
+        adding each item's text label to a list.
         """
         if parts is None:
             parts = [item.text(0)]
@@ -410,24 +401,19 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             self.get_asset_repo_path_parts(parent, parts)
         return parts
 
-    def create_local_asset_repo_path(self):
-        """
-        Builds the directory path for the local asset repository.
-        This function uses the list of parent items collected from the
-        QListWidgetItem marked as the local asset repository.
-        """
+    def create_local_asset_repo_path(self) -> str | None:
+        """Build the local asset repository path."""
         asset_repo_path_parts = self.get_asset_repo_path_parts(self.asset_repository)
         if asset_repo_path_parts and self.pr_projects_path:
-            asset_repo_path = "/".join(asset_repo_path_parts[::-1])
-            asset_repo_path = self.pr_projects_path + '/' + asset_repo_path
+            asset_repo_path = os.path.join(self.pr_projects_path, *asset_repo_path_parts[::-1])
             return asset_repo_path
         return None
 
-    def validate_item_name(self, item, column):
+    def validate_item_name(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
         """
-        Validates the item's name:
-        - Sets to 'Untitled' if empty
-        - Replaces not alphanumeric characters with underscores
+        Validate and sanitize the item name.
+
+        Set to 'Untitled' if empty. Replace non-alphanumeric characters with underscores.
         """
         text = item.text(0)
         if not text:
@@ -443,8 +429,10 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
 
     def open_project_index(self, index_path: str) -> dict:
         """
-        Load the project index JSON
-        Returns {} if the file is missing or invalid JSON.
+        Load the project index JSON.
+
+        Returns:
+            dict: Project index or an empty dict if the file is missing or invalid JSON.
         """
         if os.path.isfile(index_path):
             try:
@@ -461,10 +449,10 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         else:
             return {}
 
-    def update_project_index(self):
+    def update_project_index(self) -> None:
         """
         Update the project index JSON based on the current tree structure for the
-        selected project. Called when 'Create Folder Structure' is pressed.
+        selected project.
         """
         input_name = self.create_project_line_edit.text()
 
@@ -487,7 +475,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         with open(self.project_index_path, 'w') as output_file:
             json.dump(project_index, output_file, indent=4)
 
-    def update_local_asset_lib_data(self):
+    def update_local_asset_lib_data(self) -> None:
+        """Update local asset repository JSON metadata for the current project."""
         asset_lib_path = self.asset_repo_location.text()
         asset_repo_read = self.read_local_asset_lib_data()
         current_project = self.create_project_line_edit.text()
@@ -497,9 +486,9 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             with open(self.local_asset_lib, "w") as f:
                 json.dump(asset_repo_read, f, indent=4)
 
-    def _walk(self, parent, index, level):
+    def _walk(self, parent: QtWidgets.QTreeWidgetItem, index: dict, level: int) -> None:
         """
-        Recursively traverses the tree and builds a nested dictionary
+        Recursively traverse the tree and build a nested dictionary
         representing groups, items, and tasks.
         """
         labels = ['groups', 'items', 'tasks']
@@ -519,11 +508,12 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             index[label][name] = {}
             self._walk(child_item, index[label][name], level + 1)
 
-    def create_folder_structure(self):
+    def create_folder_structure(self) -> None:
         """
-        Handles logic for the 'Create Folder Structure' button.
-        Validates environment variables and user input, creates folders on disk,
-        and updates the project index.
+        Create the folder structure and update project data.
+
+        Validate environment variables and user input, create folders on disk,
+        and update the project index.
         """
         if not self.pr_projects_path:
             QtWidgets.QMessageBox.critical(self, "Error", "Environment variable 'PR_PROJECTS_PATH' is not set.")
@@ -586,11 +576,12 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
 
         self._reset_ui_state()
 
-    def set_item_removable(self, item, removable: bool):
+    def set_item_removable(self, item: QtWidgets.QTreeWidgetItem, removable: bool) -> None:
         """
-        Sets the 'removable' metadata flag for a QTreeWidgetItem..
-        This is used during folder structure creation to lock or unlock items from deletion
-        and editing. The removable state is stored in the item's UserRole metadata
+        Set the removable state for a tree item.
+
+        Used during folder structure creation to lock or unlock items from deletion
+        and editing.
         """
         meta = item.data(0, QtCore.Qt.UserRole) or {}
         meta["removable"] = removable
@@ -601,10 +592,11 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         else:
             item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
 
-    def _create_folders_recursive(self, item, current_path):
+    def _create_folders_recursive(self, item: QtWidgets.QTreeWidgetItem, current_path: str) -> None:
         """
-        Recursively creates folders based on the tree widget structure.
-        Also creates software-specific subfolders for task nodes.
+        Create folders recursively from the tree structure.
+
+        Create software-specific subfolders for task nodes.
         """
         for i in range(item.childCount()):
 
@@ -630,10 +622,11 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
                 os.makedirs(folder_path)
             self._create_folders_recursive(child, folder_path)
 
-    def _reset_ui_state(self):
+    def _reset_ui_state(self) -> None:
         """
-        Resets the UI elements and internal state after folder creation.
-        Clears input fields, unchecks the task checkbox, and resets
+        Reset UI state after folder creation.
+
+        Clear input fields, uncheck the task checkbox, and reset
         undo history and rename tracking.
         """
         self.include_software.setText("")
@@ -646,11 +639,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         self.undo_stack = []
         self._rename_cache = None
 
-    def check_dcc_name(self):
-        """
-        Checks DCC names for typos and suggestions.
-        Confirms changes with the user and separates valid and skipped DCCs.
-        """
+    def check_dcc_name(self) -> None:
+        """Validate DCC names and confirm suggestions."""
         dcc_orig_user_input = self.include_software.text().split(" ")
         _dcc_list = [re.sub(r'[^a-zA-Z0-9]', '', item) for item in dcc_orig_user_input]
 
@@ -695,11 +685,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
                     skipped_dcc))
 
     # Search
-    def run_search(self):
-        """
-        Runs a search using a Trie and updates the search_output QListWidget
-        with the matching results.
-        """
+    def run_search(self) -> None:
+        """Run search and update the tree view, populating matching results."""
         if not self.searching and self.search_line.text():
             # self.search_output.clearSelection()
             self.searching = True
@@ -726,14 +713,15 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             else:
                 item.setHidden(True)
 
-    def reset_search_state(self, text):
+    def reset_search_state(self, text: str) -> None:
+        """Reset searching state if no text is in the search input."""
         if not text:
             self.searching = False
 
     # Ctrl + Z Logic
-    def undo_action(self):
+    def undo_action(self) -> None:
         """
-        Handles undo logic for add, delete, and rename actions.
+        Handle undo logic for add, delete, and rename actions.
         Triggered by Ctrl+Z.
         """
         if not self.undo_stack:
@@ -759,20 +747,16 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
             _, item, old_name, new_name = action
             item.setText(0, old_name)
 
-    def cache_selected_item_name(self):
-        """
-        Stores the current item's name to track renames.
-        """
+    def cache_selected_item_name(self) -> None:
+        """Cache the selected item name for rename tracking."""
         selected = self.tree_widget.selectedItems()
         if selected:
             self._rename_cache = selected[0].text(0)
         else:
             self._rename_cache = None
 
-    def track_rename(self, item, column):
-        """
-        Tracks rename actions and adds them to the undo stack.
-        """
+    def track_rename(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
+        """Track rename actions and store them for undo."""
         old_name = self._rename_cache
         new_name = item.text(column)
 
@@ -781,10 +765,8 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
 
         self._rename_cache = None
 
-    def show_info_popup(self):
-        """
-        Displays the help popup window when the info button is clicked.
-        """
+    def show_info_popup(self) -> None:
+        """Display the help popup window when the info button is clicked."""
         QtWidgets.QMessageBox.information(
             self,
             "How to Use",
@@ -807,18 +789,14 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
 class MyTreeWidget(QtWidgets.QTreeWidget):
     delete_key_pressed = QtCore.Signal()
 
-    def mousePressEvent(self, event):
-        """
-        Clears selection if user clicks on empty space in the tree.
-        """
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        """Clear selection if the user clicks on empty space in the tree widget."""
         if not self.indexAt(event.position().toPoint()).isValid():
             self.selectionModel().clear()
         return super(MyTreeWidget, self).mousePressEvent(event)
 
-    def keyPressEvent(self, event):
-        """
-        Emits a signal when Delete or Backspace is pressed.
-        """
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        """Emit a signal on Delete or Backspace."""
         if event.key() in (QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace):
             self.delete_key_pressed.emit()
         else:

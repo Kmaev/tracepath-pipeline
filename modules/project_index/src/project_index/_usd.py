@@ -7,7 +7,13 @@ from pxr import Usd, UsdGeom, Sdf, Ar
 
 
 # USD Scene Initialization From Template
-def configure_xform(prim: Usd.Prim, kind: str | None = None):
+def configure_xform(prim: Usd.Prim, kind: str | None = None) -> UsdGeom.Xform:
+    """
+    Configure an Xform prim, if kind set kind and asset name.
+
+    Returns:
+        UsdGeom.Xform
+    """
     xform = UsdGeom.Xform(prim)
     if kind:
         model_api = Usd.ModelAPI(xform)
@@ -17,7 +23,8 @@ def configure_xform(prim: Usd.Prim, kind: str | None = None):
     return xform
 
 
-def create_prim(stage: Usd.Stage, parent_path: str, prim: dict[str, Any]):
+def create_prim(stage: Usd.Stage, parent_path: str, prim: dict[str, Any]) -> None:
+    """Create a prim and its children on the stage from dictionary template"""
     path = f"{parent_path}/{prim['name']}"
     prim_type = prim["type"]
     prim_kind = prim.get("kind")
@@ -31,7 +38,8 @@ def create_prim(stage: Usd.Stage, parent_path: str, prim: dict[str, Any]):
         create_prim(stage, path, child)
 
 
-def create_scene_from_json(template_path: str, stage_output_path: str):
+def create_scene_from_json(template_path: str, stage_output_path: str) -> None:
+    """Create a USD stage from a JSON template and save it."""
     with open(template_path, "r") as f:
         root_prim = json.load(f)
 
@@ -45,6 +53,8 @@ def find_usd_layer(usd_file_path: str) -> Sdf.Layer:
     """
     Open and return a USD layer from the given file path.
 
+    Returns:
+        Sdf.Layer
     """
     if not os.path.isfile(usd_file_path):
         raise FileNotFoundError(f"USD file not found: {usd_file_path}")
@@ -57,23 +67,10 @@ def find_usd_layer(usd_file_path: str) -> Sdf.Layer:
 
 def walk_layer_stack(layer: Sdf.Layer, visited=None, composition_graph=None) -> defaultdict[str: list[str]]:
     """
-    Traverse the sublayer stack of a USD layer and build an adjacency list of references.
+    Traverse the sublayer stack and build a composition graph.
 
-    This function walks the sublayer paths of the given USD layer, resolving and
-    opening each sublayer and recording parent-child relationships between layer
-    identifiers.
-
-    Args:
-        layer (Sdf.Layer):
-            Root usd layer
-        visited (set[str], optional):
-            Set of layer identifiers that have already been visited (mutable)
-        composition_graph (defaultdict[str, list[str]], optional):
-            Adjacency list mapping parent layer identifiers to their direct sublayer identifiers
-
-    Return:
+    Returns:
         defaultdict[str: list[str]]: Composition graph representing parent → child layer relationships.
-
     """
     if visited is None:
         visited = set()

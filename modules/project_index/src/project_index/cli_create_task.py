@@ -1,6 +1,7 @@
 import argparse
+
 from project_index import utils
-from pathlib import Path
+
 
 def main(args=None):
     parser = argparse.ArgumentParser()
@@ -10,6 +11,7 @@ def main(args=None):
     namespace = parser.parse_args(args)
 
     utils.create_task(namespace.name, namespace.dccs)
+
 
 if __name__ == "__main__":
     main()
