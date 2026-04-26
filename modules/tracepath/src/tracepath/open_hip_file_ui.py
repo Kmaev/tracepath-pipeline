@@ -13,7 +13,20 @@ from tracepath import core_utils
 
 
 class OpenFileDialog(QtWidgets.QDialog):
+    """
+    Dialog for browsing and opening scene files from the current task context.
+
+    Displays a tree of available scene files and loads the selected file into Houdini.
+    """
+
     def __init__(self, dcc, parent=None):
+        """
+        Initialize the dialog UI, populate the file tree.
+
+        Args:
+            dcc: DCC identifier, used to resolve the context path.
+            parent: Parent widget.
+        """
         super(OpenFileDialog, self).__init__(parent=parent)
         self.setObjectName('OpenDialog')
         self.resize(800, 500)
@@ -50,7 +63,8 @@ class OpenFileDialog(QtWidgets.QDialog):
                     style = f.read()
         self.setStyleSheet(style)
 
-    def populate_tree(self):
+    def populate_tree(self) -> None:
+        """Populate the tree widget with scene folders and files from the context directory."""
         root = self.tree_widget.invisibleRootItem()
         hip_folders = [i for i in sorted(os.listdir(self.user_data)) if not i.startswith(".")]
 
@@ -71,7 +85,8 @@ class OpenFileDialog(QtWidgets.QDialog):
                         hip_file_item.setData(0, QtCore.Qt.UserRole, hip_file_path)
                         hip_file_item.setText(0, hip_file)
 
-    def on_open(self):
+    def on_open(self) -> None:
+        """Load the selected scene file into Houdini"""
         item = self.tree_widget.selectedItems()[0]
         scene_path = item.data(0, QtCore.Qt.UserRole)
         hou.hipFile.load(scene_path)
@@ -81,7 +96,13 @@ class OpenFileDialog(QtWidgets.QDialog):
 dialog = None
 
 
-def show_houdini():
+def show_houdini() -> OpenFileDialog:
+    """
+    Create and show the Open File dialog in Houdini.
+
+    Returns:
+        OpenFileDialog: The created dialog instance.
+    """
     import hou
     global dialog
     dialog = OpenFileDialog("houdini", parent=hou.qt.mainWindow())

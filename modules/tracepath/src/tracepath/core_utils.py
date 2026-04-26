@@ -11,15 +11,12 @@ logging.basicConfig(level=logging.ERROR, format="%(levelname)s: %(message)s")
 
 def get_env() -> dict:
     """
-    Get environment variables used for a project repository and show path resolution.
+    Get environment used to set up a project context.
 
-    Return:
+    Returns:
         dict: A dictionary containing:
-            - "pr_projects_path": The root path to all projects, read from
-              the PR_PROJECTS_PATH environment variable.
-            - "pr_show": The current show identifier, read from the PR_SHOW
-              environment variable.
-
+            - "pr_projects_path": The root path to all projects, read from the PR_PROJECTS_PATH.
+            - "pr_show": The current show identifier, read from the PR_SHOW.
     """
     env_data = {
         "pr_projects_path": os.getenv("PR_PROJECTS_PATH"),
@@ -30,46 +27,52 @@ def get_env() -> dict:
 
 def get_path_structure_templ(template: str) -> str | list | None:
     """
-    Retrieve a path structure template from the folder_structure.json file.
-
-    This function loads the JSON file located alongside this module and
-    returns the value associated with the specified template key. The value
-    may be a string or a list, depending on how the template is defined.
+    Load a path structure template from config file (folder_structure.json).
 
     Args:
-        template (str): The name of the template key to retrieve.
+        template: The name of the template to retrieve.
 
-    Return:
+    Returns:
         str | list | None:
             - The template value (string or list) if the key exists.
             - None if the key is not found.
-
     """
     json_path = Path(__file__).parent / "folder_structure.json"
+
+    if not json_path.is_file():
+        logging.error(f"Template config not found: {json_path}")
+        return None
 
     try:
         with open(json_path) as f:
             folder_structure = json.load(f)
-        return folder_structure[template]
-    except KeyError:
-        logging.error(f"Template key '{template}' not found in {json_path.name}")
+    except json.JSONDecodeError:
+        logging.error(f"Invalid JSON in {json_path}")
         return None
+
+    value = folder_structure.get(template)
+
+    if value is None:
+        logging.error(f"Template key '{template}' not found in {json_path.name}")
+
+    return value
 
 
 def find_file_in_context(base_path: str, version: int) -> str | None:
     """
-    Find a version folder and a file inside a version folder.
-    Shot manifest context is sources from the template, but the actual file is sources by listing folders.
+    Find a file matching the given version within the context directory.
+
+    Searches subfolders of the provided base path and returns the first file
+    that matches the version pattern.
 
     Args:
-        base_path (str): A path to the folder with the versions
-        version (int): A version to search
+        base_path: A path to the folder with the versions.
+        version: A version to search.
 
-    Return:
+    Returns:
         str | None:
             - The first matching file path if the specified version is found.
             - None if no file matching the version exists within the given path.
-
     """
     node_version = str(version).zfill(3)
     base = Path(base_path)
@@ -88,11 +91,10 @@ def get_latest_version_number(context: str) -> int | None:
     Get the highest version number from versioned subfolders in a given context.
 
     Args:
-        context (str): A path to the folder that contains version
+        context: A path to the folder that contains version.
 
-    Return:
-        int: The latest version number
-
+    Returns:
+        int | None: The latest version number.
     """
     context_path = Path(context)
     if not context_path.exists():
@@ -116,8 +118,8 @@ def get_show_data_folder() -> Path:
     """
     Helper function to get the data folder.
 
-    Return:
-        Path: A path to the folder that contains project data
+    Returns:
+        Path: A path to the folder that contains project data.
 
     """
     env_vars = get_env()
@@ -126,16 +128,15 @@ def get_show_data_folder() -> Path:
 
 def get_published_data(data_folder: Path) -> dict:
     """
-    Loads the published assets data from a JSON file.
+    Load published asset data from a JSON file.
 
-    If the JSON file does not exist, it creates an empty one and returns an empty dictionary.
+    If the JSON file does not exist, creates a file and returns an empty dictionary.
 
     Args:
-        data_folder (Path): Path to the folder that contains the published data JSON file.
+        data_folder: Path to the folder with the published JSON data file.
 
-    Return:
+    Returns:
         dict: loaded dictionary from the path.
-
     """
     data_folder.mkdir(parents=True, exist_ok=True)
     published_data_path = data_folder / "published_data.json"
@@ -148,15 +149,11 @@ def get_published_data(data_folder: Path) -> dict:
 
 def write_published_data(data_folder: Path, published_data: dict) -> None:
     """
-    Writes the published assets data to a JSON file.
+    Writes the published assets data to a JSON published assets metadata file.
 
     Args:
-        data_folder (Path): Path to the folder that contains the published data JSON file.
-        published_data (dict): A dictionary containing the data to write.
-
-    Return:
-        None
-
+        data_folder: Path to the folder that contains the published data JSON file.
+        published_data: A dictionary containing the data to write.
     """
     published_data_path = data_folder / "published_data.json"
     published_data_path.write_text(json.dumps(published_data, indent=4))
@@ -169,21 +166,16 @@ def make_scene_path(dcc, ext, scene_name, ) -> str | None:
     Create a scene file path based on the DCC application, file extension, and the scene file name.
 
     Args:
-        dcc (str):
-            Name of the current DCC application. Used to determine the appropriate
-            folder where the scene file should be stored.
-        ext: (str):
-            File extension
-        scene_name (str):
-            The base name of the scene file.
+        dcc: Name of the current DCC application.
+        ext: File extension
+        scene_name: The base name of the scene file.
 
-    Return:
+    Returns:
         str | None:
             - The resolved file path for a scene based on the 'scene_file' template
               and the given DCC.
-            - None if the scene path could not be created (for example, if no scene
+            - None if the scene path could not be created (e.g. if no scene
               name is provided).
-
     """
 
     if scene_name != "":
@@ -218,7 +210,7 @@ def get_task_context() -> str:
     """
     Solve a task context path based on an environment variables.
 
-    Return:
+    Returns:
         str: A context path.
 
     """
@@ -230,10 +222,12 @@ def get_task_context() -> str:
     return context
 
 
-def check_required_env(keys):
+def check_required_env(keys: list[str]) -> None:
     """
     Helper function to ensure that all required environment variables are set.
 
+    Args:
+        keys: Required environment variable names.
     """
     miss = [k for k in keys if not os.getenv(k)]
     if miss:

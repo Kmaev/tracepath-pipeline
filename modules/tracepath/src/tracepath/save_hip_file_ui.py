@@ -12,7 +12,15 @@ from tracepath import _houdini, core_utils
 
 
 class SaveFileDialog(QtWidgets.QDialog):
+    """Dialog for saving scene files within the current task context."""
+
     def __init__(self, parent=None):
+        """
+        Initialize the dialog UI and set up scene naming and versioning controls.
+
+        Args:
+            parent: Parent widget.
+        """
         super(SaveFileDialog, self).__init__(parent=parent)
 
         self.scene_path = None
@@ -86,20 +94,37 @@ class SaveFileDialog(QtWidgets.QDialog):
                     style = f.read()
         self.setStyleSheet(style)
 
-    def on_version_up_toggled(self, checked: bool):
+    def on_version_up_toggled(self, checked: bool) -> None:
+        """
+        Toggle version-up mode and update the UI state.
+
+        If enabled, disables manual naming, uses and displays the current scene name.
+        If disabled, allows user input for the scene name.
+        """
         self.name_input.setDisabled(checked)
         self.name_input.setPlaceholderText("my_new_scene" if not checked else "")
         self.name_input.setText(_houdini.get_current_file_name() if checked else "")
         self.input_label.setText(
             self.text_labels["autoversion"] if checked else self.text_labels["new_scene"])
 
-    def get_scene_path_preview(self, text):
+    def get_scene_path_preview(self, text: str):
+        """
+        Generate and display the output scene path based on the input name.
+
+        Args:
+            text: hipfile name, user input
+        """
         name = re.sub(r'[^a-zA-Z0-9]', '_', text)
         file_ext = _houdini.hip_ext_from_session()
         self.scene_path = core_utils.make_scene_path("houdini", ext=file_ext, scene_name=name)
         self.output_path.setText(self.scene_path or "")
 
-    def validate_scene_name(self):
+    def validate_scene_name(self) -> None:
+        """
+        Sanitize the scene name input to allow only safe characters.
+
+        Replaces invalid characters with underscores.
+        """
         item = self.name_input
         text = item.text()
         safe = re.sub(r'[^A-Za-z0-9_-]+', '_', text)
@@ -111,6 +136,7 @@ class SaveFileDialog(QtWidgets.QDialog):
             self.name_input.blockSignals(old)
 
     def save_scene(self):
+        """Save the scene to the resolved path."""
         if self.name_input.text():
             _houdini.save_scene(self.scene_path)
             self.close()
@@ -124,7 +150,13 @@ class SaveFileDialog(QtWidgets.QDialog):
 dialog = None
 
 
-def show_houdini():
+def show_houdini() -> SaveFileDialog:
+    """
+    Create and show the Save File dialog in Houdini.
+
+    Returns:
+        SaveFileDialog: The created dialog instance.
+    """
     import hou
     global dialog
     dialog = SaveFileDialog(parent=hou.qt.mainWindow())
