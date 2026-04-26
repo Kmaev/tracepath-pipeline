@@ -21,7 +21,15 @@ except ImportError:
 
 
 class TraceResetUI(QtWidgets.QMainWindow):
+    """UI widget for editing published project components and files"""
+
     def __init__(self, parent=None):
+        """
+        Initialize the main window UI and load project data.
+
+        Args:
+            parent: Parent widget.
+        """
         super(TraceResetUI, self).__init__(parent=parent)
         self.resize(1500, 900)
         self.setWindowTitle('Trace Reset v0.1.6')
@@ -179,30 +187,41 @@ class TraceResetUI(QtWidgets.QMainWindow):
 
         # PROJECT COMPONENTS BROWSING ---------------------------------
 
-    def get_selection(self, widget) -> str | None:
+    def get_selection(self, widget: QtWidgets.QListWidget) -> str | None:
         """
-        Returns the name of the selected QtListWidgetItem or None
+        Return the selected item text or None.
+
+        Args:
+            widget: List widget to get the selection from.
         """
         selected = widget.selectedItems()
         return selected[0].text() if selected else None
 
-    def selected_project(self) -> str:
+    def selected_project(self) -> str | None:
+        """Return the selected project name."""
         return self.get_selection(self.projects)
 
-    def selected_group(self) -> str:
+    def selected_group(self) -> str | None:
+        """Return the selected group name."""
         return self.get_selection(self.groups)
 
-    def selected_item(self) -> str:
+    def selected_item(self) -> str | None:
+        """Return the selected item name."""
         return self.get_selection(self.items)
 
-    def selected_task(self) -> str:
+    def selected_task(self) -> str | None:
+        """Return the selected task name."""
         return self.get_selection(self.tasks)
 
-    def create_list_item(self, item_name: str, parent_widget: QtWidgets.QListWidget, metadata=None):
+    def create_list_item(self, item_name: str, parent_widget: QtWidgets.QListWidget,
+                         metadata: dict | None = None) -> None:
         """
-        Creates a QListWidgetItem, embeds metadata, and adds it to the parent widget.
-        The function modifies the provided metadata by adding the 'item_name' and
-        'parent' (parent widget) if metadata is not None.
+        Create a list item, attach metadata, and add it to the parent widget.
+
+        Args:
+            item_name: Item name.
+            parent_widget: Parent list widget.
+            metadata: Optional metadata.
         """
         item = QtWidgets.QListWidgetItem(item_name)
         if metadata:
@@ -211,32 +230,29 @@ class TraceResetUI(QtWidgets.QMainWindow):
             item.setData(QtCore.Qt.UserRole, metadata)
         parent_widget.addItem(item)
 
-    def populate_project_list(self):
-        """
-        Populates the project list (self.projects) during initialization
-        or when the tool is reset.
-        """
+    def populate_project_list(self) -> None:
+        """Populate the project list from the index data."""
         for i in self.pr_index_read.keys():
             meta = {"preview_path": i, "project": i, "type": "project"}
             self.create_list_item(i, self.projects, meta)
 
-    def get_nested_data(self, data: dict, data_keys: list) -> dict or None:
+    def get_nested_data(self, data: dict, data_keys: list[str]) -> dict or None:
         """
-        Retrieve data from the nested dictionary (project_index)
+        Return nested data from a dictionary using a list of keys.
+
+        Args:
+            data: Source data.
+            data_keys: Keys to traverse.
         """
         if not isinstance(data, dict):
             logging.warning("Invalid data provided; data must be a dictionary.")
-            return
+            return None
         result = reduce(lambda df, data_key: df.get(data_key) if isinstance(df, dict) else None, data_keys,
                         data)
         return result
 
-    def on_project_changed(self):
-        """
-        Executes when the user changes the project selection.
-        Clears all dependent widgets and, based on the newly selected project,
-        populates the groups QListWidget.
-        """
+    def on_project_changed(self) -> None:
+        """Update groups based on the selected project."""
         self.main_usd.clear()
         self.tasks.clear()
         self.items.clear()
@@ -254,12 +270,8 @@ class TraceResetUI(QtWidgets.QMainWindow):
             meta = {"preview_path": f"{project}/{group}", "project": project, "type": "group"}
             self.create_list_item(group, self.groups, meta)
 
-    def on_group_changed(self):
-        """
-        Executes when the user changes the group selection.
-        Clears all dependent widgets and, based on the newly selected group,
-        populates the items QListWidget.
-        """
+    def on_group_changed(self) -> None:
+        """Update items based on the selected group."""
         self.main_usd.clear()
         self.tasks.clear()
         self.items.clear()
@@ -281,7 +293,10 @@ class TraceResetUI(QtWidgets.QMainWindow):
 
     def read_published_data(self, show_data: str) -> dict | None:
         """
-        Reads project published data file
+        Load published project data from disk.
+
+        Args:
+            show_data: Path to the global show metadata JSON file.
         """
         try:
             with open(show_data, "r") as data_read:
@@ -291,14 +306,8 @@ class TraceResetUI(QtWidgets.QMainWindow):
             logging.error(f"Show data file \n{show_data} is not found")
             return None
 
-    def on_pr_item_changed(self):
-        """
-        Executes when the user changes the item selection.
-        Clears all dependent widgets and, based on the newly selected item,
-        populates the tasks and main_usd QListWidgets.
-        Tasks and Main USD are populated at the same time because Main USD versioning
-        is handled on a per-item basis and combines all the latest task edits.
-        """
+    def on_pr_item_changed(self) -> None:
+        """Update tasks and main USD versions for the selected item."""
         self.main_usd.clear()
         self.tasks.clear()
         project = self.selected_project()
@@ -339,11 +348,8 @@ class TraceResetUI(QtWidgets.QMainWindow):
                     "project": project, "type": "main_usd"}
             self.create_list_item(ver_preview_name, self.main_usd, meta)
 
-    def on_main_usd_version_changed(self):
-        """
-        Populates the detail tree widget with the composition layers of the selected main USD file.
-
-        """
+    def on_main_usd_version_changed(self) -> None:
+        """Display layer composition for the selected USD file."""
         self.usd_data.clear()
         selected = self.main_usd.selectedItems()
         if not selected:
@@ -357,11 +363,12 @@ class TraceResetUI(QtWidgets.QMainWindow):
             return
         self.display_usd_layer_composition(usd_file_path)
 
-    def display_usd_layer_composition(self, usd_file_path: str):
+    def display_usd_layer_composition(self, usd_file_path: str) -> None:
         """
-        Query the USD layer composition graph, and renders it recursively
-        into the layer composition tree widget.
+        Populate the layer composition tree for a USD file.
 
+        Args:
+            usd_file_path: USD scene file to create a layer composition breakdown.
         """
         root_usd_layer = _usd.find_usd_layer(usd_file_path)
         comp = _usd.walk_layer_stack(root_usd_layer)
@@ -371,16 +378,15 @@ class TraceResetUI(QtWidgets.QMainWindow):
         self.usd_data.expandAll()
 
     def populate_tree_recursive(self, tree_dict: dict[str, list[str]], node_id: str,
-                                parent_item: QtWidgets.QTreeWidgetItem, visited: set[str]):
+                                parent_item: QtWidgets.QTreeWidgetItem, visited: set[str]) -> None:
         """
         Render a node and its children recursively into a tree widget.
 
         Args:
             tree_dict: dictionary (parent -> children)
             node_id: current usd layer identifier
-            parent_item: parent UI item
+            parent_item: Parent UI item.
             visited: visited nodes
-
         """
         if node_id in visited:
             return
@@ -393,23 +399,24 @@ class TraceResetUI(QtWidgets.QMainWindow):
 
     def _tree_item(self, name: str, parent: QtWidgets.QTreeWidgetItem) -> QtWidgets.QTreeWidgetItem:
         """
-        Defines a QTreeWidgetItem and adds it to the parent.
+        Create a tree item and attach it to the parent.
 
+        Args:
+            name: Tree item name
+            parent: Parent tree widget.
         """
         item = QtWidgets.QTreeWidgetItem(parent)
         item.setText(0, name)
         return item
 
     # PROJECT FOLDERS AND DATA MODIFICATION ---------------------------------
-    def open_context_menu(self, widget: QtWidgets.QListWidget, position: QtCore.QPoint, functions: dict):
-        """
-        Opens a context menu for the selected item.
-        Parameters:
-        widget: The widget from which the context menu is created.
-        position: The position of the mouse clicks within the widget.
-        functions: A dictionary where each key is an action label (menu text),
-                   and each value is the function to execute when that action
-                   is triggered.
+    def open_context_menu(self, widget: QtWidgets.QListWidget, position: QtCore.QPoint, functions: dict) -> None:
+        """Open a context menu with the given actions.
+
+        Args:
+            widget: The widget from which the context menu is created.
+            position: The position of the mouse clicks within the widget.
+            functions: Dictionary where keys are action labels (menu text) and values are functions to execute.
         """
         item = widget.itemAt(position)
         menu = QtWidgets.QMenu(self)
@@ -420,16 +427,23 @@ class TraceResetUI(QtWidgets.QMainWindow):
 
         menu.exec(widget.viewport().mapToGlobal(position))
 
-    def open_mark_to_del_menu(self, widget: QtWidgets.QListWidget, position: QtCore.QPoint):
+    def open_mark_to_del_menu(self, widget: QtWidgets.QListWidget, position: QtCore.QPoint) -> None:
         """
-        Opens a menu to stage item to delete, connected to every QListWidget that outputs elements of the project
+        Open menu to mark items for deletion.
+
+        Args:
+            widget: QListWidget from which to create a context menu.
+            position: Menu position.
         """
         functions = {"Mark to delete": self.add_to_delete_list}
         self.open_context_menu(widget, position, functions)
 
-    def add_to_delete_list(self, orig_item: QtWidgets.QListWidgetItem):
+    def add_to_delete_list(self, orig_item: QtWidgets.QListWidgetItem) -> None:
         """
-        Stages an item for deletion, creating a copy of the item in the marked_to_delete list.
+        Add an item to the deletion list and hide it in the UI.
+
+        Args:
+            orig_item: List widget item to stage for deletion.
         """
         metadata = orig_item.data(QtCore.Qt.UserRole)
         if not metadata or "preview_path" not in metadata or "parent" not in metadata:
@@ -444,26 +458,38 @@ class TraceResetUI(QtWidgets.QMainWindow):
         self.marked_to_delete.addItem(item)
         parent_widget.clearSelection()
 
-    def open_restore_menu(self, position: QtCore.QPoint):
+    def open_restore_menu(self, position: QtCore.QPoint) -> None:
         """
-        Opens a menu to restore the item from the deletion list, connected to Marked to Delete QListWidget
+        Open menu to restore items from the deletion list.
+
+        Args:
+            position: Context menu position.
         """
         functions = {"Restore item": self.restore_item_from_del_list}
         self.open_context_menu(self.marked_to_delete, position, functions)
 
     def _find_item_by_name(self, item_name: str,
                            parent_widget: QtWidgets.QListWidget) -> QtWidgets.QListWidgetItem | None:
-        """Return the QListWidgetItem matching the given text, or None if not found."""
+        """
+        Return the QListWidgetItem matching the given text, or None if not found.
+
+        Args:
+            item_name: List widget item name.
+            parent_widget: Parent list widget.
+        """
         for i in range(parent_widget.count()):
             item = parent_widget.item(i)
             if item and item.text() == item_name:
                 return item
         return None
 
-    def restore_item_from_del_list(self, item: QtWidgets.QListWidgetItem):
+    def restore_item_from_del_list(self, item: QtWidgets.QListWidgetItem) -> None:
         """
         Removes an item from the deletion list and restores its visibility
         in the original project context QListWidget.
+
+        Args:
+            item: List widget item to restore.
         """
         self.marked_to_delete.takeItem(self.marked_to_delete.row(item))
         item_name = item.data(QtCore.Qt.UserRole + 1)["item_name"]
@@ -477,10 +503,13 @@ class TraceResetUI(QtWidgets.QMainWindow):
             parent_widget.clearSelection()
             parent_widget.setCurrentItem(found_item)
 
-    def _restore_selection(self, prev_selection: str, parent_widget: QtWidgets.QListWidget):
+    def _restore_selection(self, prev_selection: str, parent_widget: QtWidgets.QListWidget) -> None:
         """
-        Restores the previously selected QListWidgetItems after a cleanup and folder deletion
-        operation, once the tool has been reset.
+        Restore the previous selection in the given widget.
+
+        Args:
+            prev_selection: List widget item to restore.
+            parent_widget: Parent list widget.
         """
         found_item = self._find_item_by_name(prev_selection, parent_widget)
         if found_item:
@@ -488,16 +517,22 @@ class TraceResetUI(QtWidgets.QMainWindow):
         else:
             parent_widget.setCurrentRow(0)
 
-    def open_inspect_usd_file_menu(self, position: QtCore.QPoint):
+    def open_inspect_usd_file_menu(self, position: QtCore.QPoint) -> None:
         """
-        Opens a menu to restore the item from the deletion list, connected to Marked to Delete QListWidget
+        Open menu for USD inspection actions.
+
+        Args:
+            position: Context menu position.
         """
         functions = {"Open in USD View": self.open_in_usd_view, "Mark to delete": self.add_to_delete_list}
         self.open_context_menu(self.main_usd, position, functions)
 
-    def open_in_usd_view(self, item: QtWidgets.QListWidgetItem):
+    def open_in_usd_view(self, item: QtWidgets.QListWidgetItem) -> None:
         """
-        Opens usd view to inspect a selected main usd file
+        Open the selected USD file in usdview.
+
+        Args:
+            item: List widget item containing the USD file to open in usdview.
         """
         usd_file_path = item.data(QtCore.Qt.UserRole)["preview_path"]
         cmd = ["usdview", usd_file_path]
@@ -506,12 +541,8 @@ class TraceResetUI(QtWidgets.QMainWindow):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Launch failed", f"Failed to open usdview:\n{e}")
 
-    def clean_up_ui(self):
-        """
-        Executed after all data modifications (folders on disk, project_index, and show_data) are complete.
-        Saves the current project, group, and item selections in temporary variables and clears all QListWidgets.
-        Runs a new query on projects using the latest updated data, and then restores the previous selection.
-        """
+    def clean_up_ui(self) -> None:
+        """Reset UI state after deletion and restore selections."""
         if self.marked_to_delete.count() == 0:
             QtWidgets.QMessageBox.information(
                 self,
@@ -538,10 +569,8 @@ class TraceResetUI(QtWidgets.QMainWindow):
         self._restore_selection(_cur_gr, self.groups)
         self._restore_selection(_cur_itm, self.items)
 
-    def on_del_exec(self):
-        """
-        Called when delete button is executed. Modifies data on disk, project index
-        """
+    def on_del_exec(self) -> None:
+        """Execute deletion of staged items and update data."""
         items_to_process = [self.marked_to_delete.item(i) for i in range(self.marked_to_delete.count())]
         if not items_to_process:
             logging.info("No staged items found — skipping deletion.")
@@ -592,9 +621,12 @@ class TraceResetUI(QtWidgets.QMainWindow):
         )
         logging.info(f"All message: {msg}")
 
-    def remove_filesystem_item(self, path_to_remove: Path):
+    def remove_filesystem_item(self, path_to_remove: Path) -> None:
         """
-        Removes files from disk
+        Remove a file or directory from disk.
+
+        Args:
+            path_to_remove: Filesystem path of the file or directory to remove.
         """
         if not path_to_remove.exists():
             logging.error(f"File not found: {path_to_remove}")
@@ -615,9 +647,13 @@ class TraceResetUI(QtWidgets.QMainWindow):
         except PermissionError as e:
             logging.error(f"Permission denied while removing {path_to_remove}\n{e}")
 
-    def remove_meta_key_recursive(self, meta: dict, key_to_delete: str):
+    def remove_meta_key_recursive(self, meta: dict, key_to_delete: str) -> None:
         """
-        Recursively deletes an entry by key from a nested dictionary.
+        Remove a key recursively from a nested dictionary.
+
+        Args:
+            meta: Metadata dictionary.
+            key_to_delete: Key to remove.
         """
         if isinstance(meta, dict):
             # Attempt to delete the key, returns None if the key is not found in the first step of the iteration

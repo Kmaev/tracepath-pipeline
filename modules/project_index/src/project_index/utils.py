@@ -1,18 +1,15 @@
 import difflib
-import logging
 import json
+import logging
 import os
 import re
-
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 def get_dcc_template() -> dict:
-    """
-    Reads the JSON file containing folder templates for each DCC.
-    """
+    """Load DCC folder templates from config."""
     framework = os.getenv("PR_TRACEPATH_FRAMEWORK")
     file_path = os.path.join(framework, "config/applications_templates.json")
 
@@ -21,9 +18,13 @@ def get_dcc_template() -> dict:
     return templ_file
 
 
-def create_dcc_folder_structure(dcc_name: str, parent_folder: str):
+def create_dcc_folder_structure(dcc_name: str, parent_folder: str) -> None:
     """
-    Creates a folder structure based on the template for the given DCC.
+    Create folder structure for a DCC.
+
+    Args:
+        dcc_name: DCC name.
+        parent_folder: Parent folder path.
     """
     parent_folder = Path(parent_folder)
     templ_file = get_dcc_template()
@@ -34,30 +35,38 @@ def create_dcc_folder_structure(dcc_name: str, parent_folder: str):
             os.makedirs(folder_path)
 
 
-def dcc_template_check(_dcc: str, templ_file: dict) -> str | None:
+def dcc_template_check(dcc: str, templ_file: dict) -> str | None:
     """
-    Checks whether the given DCC exists in the template file.
-    If not, returns the closest matching suggestion (if any).
+    Return closest matching DCC name if not found.
+
+    Args:
+        dcc: DCC name to check.
+        templ_file: Template data.
     """
     known_dccs = list(templ_file.keys())
-    if _dcc in known_dccs:
+    if dcc in known_dccs:
         return None
-    suggestion = difflib.get_close_matches(_dcc, known_dccs, n=1)
+    suggestion = difflib.get_close_matches(dcc, known_dccs, n=1)
     return suggestion[0] if suggestion else None
 
 
 # ======================================================================================================================
 # CLI Create task tool
 
-def get_context():
+def get_context() -> str:
+    """Build context path from environment variables."""
     context = os.path.join(os.environ.get("PR_PROJECTS_PATH"), os.environ.get("PR_SHOW"), os.environ.get("PR_GROUP"),
                            os.environ.get("PR_ITEM"))
     return context
 
 
-def create_task(name: str, dcc_list: list):
+def create_task(name: str, dcc_list: list[str]) -> None:
     """
-    Called from CLI
+    Create a task and associated DCC folders.
+
+    Args:
+        name: Task name.
+        dcc_list: List of DCC names.
     """
 
     context = get_context()
@@ -78,12 +87,13 @@ def create_task(name: str, dcc_list: list):
         logging.info("Project index updated")
 
 
-def check_dcc_name(dcc_list: list):
+def check_dcc_name(dcc_list: list[str]) -> list[str]:
     """
-    Checks DCC names for typos and suggestions.
-    Confirms changes with the user and separates valid and skipped DCCs.
-    """
+    Validate DCC names and return valid entries.
 
+    Args:
+        dcc_list: List of DCC names.
+    """
     _dcc_list = [re.sub(r'[^a-zA-Z0-9]', '', item) for item in dcc_list]
 
     templ = get_dcc_template()
@@ -123,16 +133,22 @@ def check_dcc_name(dcc_list: list):
 
     if skipped_dcc:
         logging.info(f"Skipping DCC '{skipped_dcc}'."
-            "Template Not Found\n"
-            "The following DCC(s) will be skipped during folder creation because "
-            "their templates were not found:\n\n"
-            + "\n".join(skipped_dcc)
-        )
+                     "Template Not Found\n"
+                     "The following DCC(s) will be skipped during folder creation because "
+                     "their templates were not found:\n\n"
+                     + "\n".join(skipped_dcc)
+                     )
 
     return checked_dcc_list
 
 
-def update_project_index(task):
+def update_project_index(task: str) -> None:
+    """
+    Update project index with a new task.
+
+    Args:
+        task: Task name.
+    """
     framework = os.getenv("PR_TRACEPATH_FRAMEWORK")
     project_index_path = os.path.join(framework, "config/trace_project_index.json")
     project = os.environ.get("PR_SHOW")
@@ -154,14 +170,17 @@ def update_project_index(task):
     if task not in tasks:
         tasks[task] = {}
 
-    # Write updated data back
+        # Write updated data back
         with open(project_index_path, 'w') as f:
             json.dump(data, f, indent=4)
 
 
-def add_dcc_folders(dcc_list: list):
+def add_dcc_folders(dcc_list: list[str]) -> None:
     """
-    Called from CLI creates subfolders on add function executed
+    Create DCC folders in the current context.
+
+    Args:
+        dcc_list: List of DCC names.
     """
     context = os.path.join(get_context(), os.environ.get("PR_TASK"))
 

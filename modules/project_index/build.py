@@ -31,7 +31,3 @@ if __name__ == '__main__':
         install_path=os.environ['REZ_BUILD_INSTALL_PATH'],
         targets=sys.argv[1:]
     )
-
-#To build rez package:
-# cd /Users/kmaev/Documents/hou_dev/tracepath_pipeline/modules/project_index
-# rez build --install

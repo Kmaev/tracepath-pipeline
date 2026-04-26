@@ -1,6 +1,7 @@
 import argparse
+
 from project_index import utils
-from pathlib import Path
+
 
 def main(args=None):
     parser = argparse.ArgumentParser()
@@ -9,6 +10,7 @@ def main(args=None):
     namespace = parser.parse_args(args)
 
     utils.add_dcc_folders(namespace.dccs)
+
 
 if __name__ == "__main__":
     main()
