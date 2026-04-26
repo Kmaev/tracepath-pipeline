@@ -5,10 +5,18 @@ class TrieNode:
 
 
 class Trie:
+    """Store a single trie node."""
+
     def __init__(self):
         self.root = TrieNode()
 
     def insert(self, word: str) -> None:
+        """
+        Insert a word into the trie.
+
+        Args:
+            word: Word to insert.
+        """
         cur = self.root
         """
          We check each character in the word to see if it is already among the 
@@ -22,9 +30,12 @@ class Trie:
 
         cur.end_of_word = True
 
-    def starts_with_prefix(self, prefix):
+    def starts_with_prefix(self, prefix: str) -> TrieNode | None:
         """
-        Searches for the node corresponding to the prefix.
+        Return the node matching the given prefix.
+
+        Args:
+            prefix: Prefix to search.
         """
         node = self.root
         for char in prefix:
@@ -33,9 +44,14 @@ class Trie:
             node = node.children[char]
         return node
 
-    def collect_words(self, node, prefix, results):
+    def collect_words(self, node: TrieNode, prefix: str, results: list[str]) -> None:
         """
-        Recursively collects all words in the Tree starting from the given node.
+        Collect words from the given node.
+
+        Args:
+            node: Starting node.
+            prefix: Current prefix.
+            results: Output list of words.
         """
         if node.end_of_word:
             results.append(prefix)  # if all word found it is added to the result
@@ -43,9 +59,12 @@ class Trie:
         for char, next_node in node.children.items():
             self.collect_words(next_node, prefix + char, results)
 
-    def autocomplete(self, prefix):
+    def autocomplete(self, prefix: str) -> list[str]:
         """
-        Collects a list of all words in the Trie that start with the prefix.
+        Return words starting with the given prefix.
+
+        Args:
+            prefix: Prefix to search.
         """
         node = self.starts_with_prefix(prefix)
         results = []

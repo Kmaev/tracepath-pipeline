@@ -481,7 +481,7 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         asset_repo_read = self.read_local_asset_lib_data()
         current_project = self.create_project_line_edit.text()
         repo = asset_repo_read.get(current_project, None)
-        if repo != asset_repo_read:
+        if repo != asset_lib_path:
             asset_repo_read[current_project] = asset_lib_path
             with open(self.local_asset_lib, "w") as f:
                 json.dump(asset_repo_read, f, indent=4)
