@@ -15,8 +15,8 @@ def get_env() -> dict:
 
     Returns:
         dict: A dictionary containing:
-            - "pr_projects_path": The root path to all projects, read from the PR_PROJECTS_PATH.
-            - "pr_show": The current show identifier, read from the PR_SHOW.
+            - "pr_projects_path": The root path to all projects, read from PR_PROJECTS_PATH.
+            - "pr_show": The current show identifier, read from PR_SHOW.
     """
     env_data = {
         "pr_projects_path": os.getenv("PR_PROJECTS_PATH"),
@@ -91,7 +91,7 @@ def get_latest_version_number(context: str) -> int | None:
     Get the highest version number from versioned subfolders in a given context.
 
     Args:
-        context: A path to the folder that contains version.
+        context: A path to the folder that contains versions.
 
     Returns:
         int | None: The latest version number.
@@ -120,7 +120,6 @@ def get_show_data_folder() -> Path:
 
     Returns:
         Path: A path to the folder that contains project data.
-
     """
     env_vars = get_env()
     return Path(env_vars["pr_projects_path"]) / env_vars["pr_show"] / "show_data"
@@ -136,7 +135,7 @@ def get_published_data(data_folder: Path) -> dict:
         data_folder: Path to the folder with the published JSON data file.
 
     Returns:
-        dict: loaded dictionary from the path.
+        dict: Loaded dictionary from the path.
     """
     data_folder.mkdir(parents=True, exist_ok=True)
     published_data_path = data_folder / "published_data.json"
@@ -149,7 +148,7 @@ def get_published_data(data_folder: Path) -> dict:
 
 def write_published_data(data_folder: Path, published_data: dict) -> None:
     """
-    Writes the published assets data to a JSON published assets metadata file.
+    Writes the published assets data to a JSON assets metadata file.
 
     Args:
         data_folder: Path to the folder that contains the published data JSON file.
@@ -167,7 +166,7 @@ def make_scene_path(dcc, ext, scene_name, ) -> str | None:
 
     Args:
         dcc: Name of the current DCC application.
-        ext: File extension
+        ext: File extension.
         scene_name: The base name of the scene file.
 
     Returns:
@@ -177,7 +176,6 @@ def make_scene_path(dcc, ext, scene_name, ) -> str | None:
             - None if the scene path could not be created (e.g. if no scene
               name is provided).
     """
-
     if scene_name != "":
         check_required_env(["PR_PROJECTS_PATH", "PR_SHOW", "PR_ITEM", "PR_GROUP", "PR_TASK"])
         env_data = {
@@ -208,11 +206,10 @@ def make_scene_path(dcc, ext, scene_name, ) -> str | None:
 
 def get_task_context() -> str:
     """
-    Solve a task context path based on an environment variables.
+    Solve a task context path based on environment variables.
 
     Returns:
         str: A context path.
-
     """
     check_required_env(["PR_PROJECTS_PATH", "PR_SHOW", "PR_ITEM", "PR_GROUP", "PR_TASK"])
     context = os.path.join(os.environ.get("PR_PROJECTS_PATH"), os.environ.get("PR_SHOW"),

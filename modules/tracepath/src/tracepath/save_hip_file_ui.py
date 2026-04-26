@@ -98,7 +98,7 @@ class SaveFileDialog(QtWidgets.QDialog):
         """
         Toggle version-up mode and update the UI state.
 
-        If enabled, disables manual naming, uses and displays the current scene name.
+        If enabled, disables manual naming, uses, and displays the current scene name.
         If disabled, allows user input for the scene name.
         """
         self.name_input.setDisabled(checked)

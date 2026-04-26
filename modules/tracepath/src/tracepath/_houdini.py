@@ -17,8 +17,7 @@ def get_node_env_data(node: hou.Node) -> dict:
         node: Houdini TracePath Load USD Stage or USD Write HDA.
 
     Returns:
-        dict: A dictionary containing:
-        "pr_group", "pr_item", "pr_task" environment variables.
+        dict: Dictionary containing "pr_group", "pr_item", and "pr_task".
     """
     core_utils.check_required_env(["PR_GROUP", "PR_ITEM", "PR_TASK"])
     node_data = {
@@ -31,15 +30,16 @@ def get_node_env_data(node: hou.Node) -> dict:
 
 def get_manifest_context(node: hou.Node, templ) -> str:
     """
-    Resolve the full context path for the USD shot manifest using template and environment values.
+    Resolve the full context path for the USD shot manifest using a template and environment values.
+
     Used in Houdini HDA.
 
     Args:
-        node: A Houdini node from a TracePath Load USD Stage or USD Write HDA.
+        node: Houdini node from a TracePath Load USD Stage or USD Write HDA.
         templ: Template key used to look up a path structure definition.
 
     Returns:
-        str: The resolved path to the main shot manifest folder.
+        str: Resolved path to the main shot manifest folder.
     """
     env_vars = core_utils.get_env()
     node_vars = get_node_env_data(node)
@@ -55,10 +55,12 @@ def get_manifest_context(node: hou.Node, templ) -> str:
 
 def set_latest_version(node: hou.Node, context: str) -> None:
     """
-    Set the node's version parameter to the latest version found in the context folder. Used in Houdini HDA.
+    Set the node's version parameter to the latest version found in the context folder.
+
+    Used in Houdini HDA.
 
     Args:
-        node: A Houdini node TracePath Load USD Stage or USD Write HDA.
+        node: Houdini node from a TracePath Load USD Stage or USD Write HDA.
         context: Task context path (Project/Group/Item/Task).
     """
     version = core_utils.get_latest_version_number(str(context))
@@ -71,13 +73,14 @@ def set_latest_version(node: hou.Node, context: str) -> None:
 def load_shot_manifest(node: hou.Node) -> str:
     """
     Load the path to the main shot manifest file based on the version selected in the HDA.
+
     Used in Houdini HDA.
 
     Args:
-        node: A Houdini node TracePath Load USD Stage or USD Write HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
 
     Returns:
-        str: Path to the main shot manifest usd file.
+        str: Path to the main shot manifest USD file.
     """
     context = get_manifest_context(node, "usd_shot_manifest_output")
     node_version = node.parm("version").evalAsString()
@@ -92,14 +95,14 @@ def load_shot_manifest(node: hou.Node) -> str:
 
 def get_usd_output_path(node: hou.Node, template) -> str:
     """
-    Solve the usd output file path using environment variables and the selected template.
+    Resolve the USD output file path using environment variables and the selected template.
 
     Args:
-        node: A Houdini node TracePath Load USD Stage or USD Write HDA.
-        template: The name of the template key to retrieve.
+        node: Houdini node from a TracePath Load USD Stage or USD Write HDA.
+        template: Template key used to retrieve the path structure.
 
     Returns:
-        str: A path to the usd file to write to.
+        str: Path to the USD file to write.
     """
     env_vars = core_utils.get_env()
     node_vars = get_node_env_data(node)
@@ -119,15 +122,15 @@ def get_usd_output_path(node: hou.Node, template) -> str:
 
 def get_first_frame_cache(node: hou.Node) -> float:
     """
-    Get the first frame cache for a given node.
+    Get the first frame cache value for a given node.
 
-    This function is used to evaluate if just a single file cache or if it is a sequence should be written to disk.
+    Used to determine whether a single file or a sequence should be written.
 
     Args:
-        node: A Houdini node TracePath Load USD Stage or USD Write HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
 
     Returns:
-        float: A first frame of the cache.
+        float: First frame cache value.
     """
     first_frame = node.parm("f1").eval()
     cache_parm = node.parm("lopoutput").evalAtFrame(first_frame)
@@ -136,10 +139,10 @@ def get_first_frame_cache(node: hou.Node) -> float:
 
 def apply_autoversion(node: hou.Node) -> None:
     """
-    HDA call to trigger autoversion application, set an updated version value.
+    Apply auto-versioning and update the node version parameter.
 
     Args:
-        node: A Houdini node TracePath Load USD Stage or USD Write HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
     """
     version = 1
     if node.parm("autoversion").eval() == 1:
@@ -156,15 +159,15 @@ def apply_autoversion(node: hou.Node) -> None:
 
 def version_up_shot_manifest(node: hou.Node) -> str:
     """
-    Create a versioned up output path.
+    Create a versioned output path.
 
-    Using re extract the version number and increase the version. Used in Houdini HDA.
+    Used in Houdini HDA.
 
     Args:
-        node: A Houdini node TracePath Load USD Stage or USD Write HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
 
     Returns:
-        str: Versioned up main shot manifest output path.
+        str: Versioned main shot manifest output path.
     """
     new_output_path = ""
     context = Path(get_manifest_context(node, "usd_shot_manifest_output"))
@@ -205,13 +208,12 @@ def version_up_shot_manifest(node: hou.Node) -> str:
 
 def find_stage_source_layer(node: hou.node) -> str:
     """
-    Get the identifier of the USD layer on which the current edit was authored.
+    Get the identifier of the USD layer where the current edit was authored.
 
-    Used in Houdini HDA to initialise a source layer for building the
-    main shot manifest composition.
+    Used in Houdini HDA to initialize a source layer for building the shot manifest.
 
     Args:
-        node: A Houdini node in LOP context.
+        node: Houdini node in LOP context.
 
     Returns:
         str: USD stage identifier.
@@ -223,12 +225,13 @@ def find_stage_source_layer(node: hou.node) -> str:
 
 def get_publish_key(node: hou.Node) -> str:
     """
-    Helper function to get the publish key (consist of group and name)
+    Get the publish key composed of group and item.
 
     Args:
-        node: A Houdini node TracePath USD Write HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
+
     Returns:
-        str: A key combined from pr_group and pr_item.
+        str: Key combining "pr_group" and "pr_item".
     """
     node_data = get_node_env_data(node)
     return f"{node_data['pr_group']}_{node_data['pr_item']}"
@@ -236,10 +239,10 @@ def get_publish_key(node: hou.Node) -> str:
 
 def write_publish_comment(node: hou.Node) -> None:
     """
-    Write a publishing comment from the node to metadata file.
+    Write a publish comment from the node to the metadata file.
 
     Args:
-        node: A Houdini node TracePath USD Write HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
     """
     comment = node.parm("comment").eval()
     file = node.parm("shot_manifest_output").eval()
@@ -258,13 +261,15 @@ def write_publish_comment(node: hou.Node) -> None:
 
 def read_publish_comment(node: hou.Node) -> str | None:
     """
-    Read published comment from the metadata file. Used in Houdini HDA
+    Read a published comment from the metadata file.
+
+    Used in Houdini HDA.
 
     Args:
-        node: A Houdini node TracePath HDA.
+        node: Houdini TracePath Load USD Stage or USD Write HDA.
 
     Returns:
-        str | None: A comment from the published main shot manifest metadata file or None if no comment found.
+        str | None: Published comment if found, otherwise None.
     """
     file_path = node.parm("shot_manifest_read").evalAsString()
     data_folder = core_utils.get_show_data_folder()
@@ -286,7 +291,7 @@ def get_current_file_name() -> str:
     Retrieve HIPFILE name from $HIPNAME environment variable.
 
     Returns:
-        str: hipfile name
+        str: Hipfile name
     """
     hip_name = hou.getenv("HIPNAME")
     hip_name = "_".join(hip_name.split("_")[:-1])
@@ -341,6 +346,9 @@ def save_scene(scene_path) -> None:
 
     Args:
         scene_path: Destination file path.
+
+    Returns:
+        None
     """
     if not os.path.isdir(os.path.dirname(scene_path)):
         os.makedirs(os.path.dirname(scene_path))

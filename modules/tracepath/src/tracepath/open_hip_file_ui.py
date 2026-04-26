@@ -86,7 +86,7 @@ class OpenFileDialog(QtWidgets.QDialog):
                         hip_file_item.setText(0, hip_file)
 
     def on_open(self) -> None:
-        """Load the selected scene file into Houdini"""
+        """Load the selected scene file into Houdini."""
         item = self.tree_widget.selectedItems()[0]
         scene_path = item.data(0, QtCore.Qt.UserRole)
         hou.hipFile.load(scene_path)
