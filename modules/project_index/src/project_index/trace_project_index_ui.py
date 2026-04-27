@@ -91,7 +91,7 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         self.search_line.setPlaceholderText("Search")
         self.central_layout.addWidget(self.search_line)
 
-        self.tree_widget = MyTreeWidget()
+        self.tree_widget = IndexTreeWidget()
         self.tree_widget.setHeaderLabels(["Projects:"])
         self.central_layout.addWidget(self.tree_widget)
         self.tree_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -786,21 +786,21 @@ class TraceProjectIndex(QtWidgets.QMainWindow):
         )
 
 
-class MyTreeWidget(QtWidgets.QTreeWidget):
+class IndexTreeWidget(QtWidgets.QTreeWidget):
     delete_key_pressed = QtCore.Signal()
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         """Clear selection if the user clicks on empty space in the tree widget."""
         if not self.indexAt(event.position().toPoint()).isValid():
             self.selectionModel().clear()
-        return super(MyTreeWidget, self).mousePressEvent(event)
+        return super(IndexTreeWidget, self).mousePressEvent(event)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Emit a signal on Delete or Backspace."""
         if event.key() in (QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace):
             self.delete_key_pressed.emit()
         else:
-            super(MyTreeWidget, self).keyPressEvent(event)
+            super(IndexTreeWidget, self).keyPressEvent(event)
 
 
 if __name__ == "__main__":
