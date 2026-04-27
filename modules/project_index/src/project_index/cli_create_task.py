@@ -3,7 +3,13 @@ import argparse
 from project_index import utils
 
 
-def main(args=None):
+def main(args: list[str] | None = None) -> None:
+    """
+      Create a task with DCC folders from CLI.
+
+      Args:
+          args: Command-line arguments.
+      """
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", required=True, help="Task name")
     parser.add_argument("--dccs", nargs="+", required=True, help="DCC folder list")
